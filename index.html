@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#10102a">
+    <meta name="description" content="OS Init — pick your OS and packs, get an ordered new-device setup checklist. Installable PWA, works offline.">
+    <title>OS Init</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --bg: #10102a;
+            --panel: #1a1b3d;
+            --panel2: #12132e;
+            --ink: #f4f3ff;
+            --muted: #8f8fc0;
+            --teal: #2dd4bf;
+            --radius: 16px;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--ink);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 14px 12px calc(18px + env(safe-area-inset-bottom));
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .wrap { width: 100%; max-width: 480px; display: flex; flex-direction: column; align-items: center; }
+        .hidden { display: none !important; }
+
+        .top { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; align-self: flex-start; width: 100%; }
+        .top img { width: 42px; height: 42px; border-radius: 12px; box-shadow: 0 4px 14px rgba(45,212,191,.3); }
+        .top h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.4px; flex: 1; }
+        .top .sub { font-size: 11px; color: var(--muted); font-weight: 600; }
+
+        .q { align-self: flex-start; font-size: 15px; font-weight: 800; margin: 6px 0 10px; }
+        .q span { color: var(--muted); font-weight: 600; font-size: 12px; display: block; margin-top: 2px; }
+
+        .oscards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; margin-bottom: 18px; }
+        .oscard {
+            border: 2px solid transparent; background: var(--panel); border-radius: var(--radius);
+            padding: 16px 8px; cursor: pointer; text-align: center; color: var(--ink);
+            font-family: inherit;
+        }
+        .oscard .e { font-size: 34px; display: block; margin-bottom: 6px; }
+        .oscard .n { font-size: 14px; font-weight: 800; }
+        .oscard.on { border-color: var(--teal); background: rgba(45,212,191,.1); box-shadow: 0 0 18px rgba(45,212,191,.25); }
+
+        .packchips { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin-bottom: 20px; }
+        .pack {
+            border: 2px solid transparent; background: var(--panel); border-radius: var(--radius);
+            padding: 12px; cursor: pointer; color: var(--ink); font-family: inherit; text-align: left;
+        }
+        .pack .e { font-size: 24px; }
+        .pack .n { font-size: 14px; font-weight: 800; margin: 4px 0 2px; }
+        .pack .d { font-size: 11px; color: var(--muted); line-height: 1.4; }
+        .pack.on { border-color: var(--teal); background: rgba(45,212,191,.1); }
+
+        .bigbtn {
+            width: 100%; border: none; border-radius: 14px; cursor: pointer;
+            background: linear-gradient(135deg, #2dd4bf, #0d9488);
+            color: #04302b; font-size: 17px; font-weight: 800; padding: 16px; min-height: 58px;
+            box-shadow: 0 6px 18px rgba(45,212,191,.35); font-family: inherit;
+        }
+        .bigbtn:active { transform: scale(.98); }
+        .bigbtn:disabled { opacity: .4; box-shadow: none; }
+
+        .ghostbtn {
+            width: 100%; border: 1px solid rgba(255,255,255,.15); border-radius: 14px; cursor: pointer;
+            background: transparent; color: var(--ink);
+            font-size: 14px; font-weight: 700; padding: 13px; font-family: inherit;
+        }
+        .ghostbtn:active { transform: scale(.98); }
+
+        /* checklist screen */
+        .chead { width: 100%; margin-bottom: 10px; }
+        .chead .row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+        .chead .title { font-size: 18px; font-weight: 800; }
+        .chead .title .e { margin-right: 6px; }
+        .chead .count { font-size: 13px; font-weight: 700; color: var(--muted); }
+        .pbar { height: 10px; background: var(--panel); border-radius: 6px; overflow: hidden; }
+        #pfill { height: 100%; width: 0%; background: linear-gradient(90deg, #2dd4bf, #5eead4); border-radius: 6px; transition: width .3s ease; }
+
+        .done-banner {
+            width: 100%; background: rgba(45,212,191,.12); border: 1px solid rgba(45,212,191,.4);
+            border-radius: var(--radius); padding: 14px; text-align: center; margin-bottom: 12px;
+            font-size: 15px; font-weight: 800; color: var(--teal);
+        }
+        .done-banner span { display: block; font-size: 12px; font-weight: 600; color: var(--muted); margin-top: 4px; }
+
+        .packhead {
+            align-self: flex-start; width: 100%;
+            font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
+            color: var(--teal); margin: 14px 0 8px;
+        }
+        .step {
+            width: 100%; background: var(--panel); border-radius: var(--radius);
+            padding: 13px 13px 13px 12px; margin-bottom: 10px;
+            display: flex; gap: 12px; align-items: flex-start;
+            transition: opacity .2s;
+        }
+        .step.done { opacity: .55; }
+        .step.done .st { text-decoration: line-through; }
+        .check {
+            flex: none; width: 28px; height: 28px; border-radius: 50%; margin-top: 1px;
+            border: 2px solid var(--muted); background: transparent; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            color: transparent; font-size: 16px; font-weight: 800; font-family: inherit;
+        }
+        .step.done .check { background: var(--teal); border-color: var(--teal); color: #04302b; }
+        .sbody { flex: 1; min-width: 0; }
+        .st { font-size: 15px; font-weight: 700; line-height: 1.35; }
+        .sd { font-size: 13px; color: var(--muted); line-height: 1.55; margin-top: 4px; }
+        .cmdbox {
+            margin-top: 8px; background: #0a0a1c; border-radius: 10px; padding: 10px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 12px; color: #5eead4; word-break: break-all; line-height: 1.5;
+            display: flex; gap: 8px; align-items: flex-start; user-select: text; -webkit-user-select: text;
+        }
+        .cmdbox code { flex: 1; }
+        .copybtn {
+            flex: none; border: none; border-radius: 8px; cursor: pointer;
+            background: rgba(45,212,191,.15); color: var(--teal);
+            font-size: 11px; font-weight: 800; padding: 7px 10px; font-family: inherit;
+        }
+        .copybtn:active { transform: scale(.94); }
+        .steplink {
+            display: inline-block; margin-top: 8px; font-size: 13px; font-weight: 700;
+            color: var(--teal); text-decoration: none;
+            background: rgba(45,212,191,.1); padding: 8px 14px; border-radius: 10px;
+        }
+
+        .cfoot { width: 100%; display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+        .cfoot .row2 { display: flex; gap: 10px; }
+        .cfoot .row2 .ghostbtn { flex: 1; }
+
+        .toast {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(20px);
+            background: #23244d; color: var(--ink); font-size: 14px; font-weight: 700;
+            padding: 12px 22px; border-radius: 24px; opacity: 0; pointer-events: none;
+            transition: opacity .25s, transform .25s; z-index: 50; white-space: nowrap;
+            box-shadow: 0 8px 24px rgba(0,0,0,.5);
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        .tip { text-align: center; margin-top: 14px; font-size: 12px; color: var(--muted); opacity: .8; line-height: 1.6; }
+        footer { text-align: center; margin-top: 8px; font-size: 13px; color: var(--muted); }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <div class="top">
+            <img src="icon-192.png" alt="OS Init icon">
+            <h1>OS Init</h1>
+            <div class="sub">fresh-device<br>setup</div>
+        </div>
+
+        <!-- setup screen -->
+        <div id="setupScreen" class="wrap">
+            <div class="q">What are you setting up?<span>Pick one device</span></div>
+            <div class="oscards" id="osCards"></div>
+
+            <div class="q">Pick your packs<span>Choose at least one</span></div>
+            <div class="packchips" id="packChips"></div>
+
+            <button class="bigbtn" id="buildBtn" disabled>Build my checklist</button>
+            <div class="tip">63 hand-picked steps · copy-paste terminal commands<br>Progress is saved on your device</div>
+        </div>
+
+        <!-- checklist screen -->
+        <div id="listScreen" class="wrap hidden">
+            <div class="chead">
+                <div class="row">
+                    <div class="title" id="listTitle"></div>
+                    <div class="count" id="listCount"></div>
+                </div>
+                <div class="pbar"><div id="pfill"></div></div>
+            </div>
+            <div class="done-banner hidden" id="doneBanner">🎉 All set up!<span>Your device is ready to roll.</span></div>
+            <div id="steps" class="wrap"></div>
+            <div class="cfoot">
+                <button class="bigbtn" id="copyAllBtn">Copy all commands</button>
+                <div class="row2">
+                    <button class="ghostbtn" id="resetBtn">Reset checks</button>
+                    <button class="ghostbtn" id="backBtn">Start over</button>
+                </div>
+            </div>
+        </div>
+
+        <footer>Made with ❤️ by Sauravhhh</footer>
+    </div>
+    <div class="toast" id="toast"></div>
+
+    <script src="data.js"></script>
+    <script>
+        (function () {
+            'use strict';
+            var D = window.OSInitData;
+
+            var setupScreen = document.getElementById('setupScreen');
+            var listScreen = document.getElementById('listScreen');
+            var osCards = document.getElementById('osCards');
+            var packChips = document.getElementById('packChips');
+            var buildBtn = document.getElementById('buildBtn');
+            var toast = document.getElementById('toast');
+
+            var selOS = localStorage.getItem('osinit_os') || null;
+            var selPacks = JSON.parse(localStorage.getItem('osinit_packs') || '["essentials"]');
+            var checklist = [];
+            var checked = {};
+            var cfgKey = '';
+
+            function showToast(msg) {
+                toast.textContent = msg;
+                toast.classList.add('show');
+                clearTimeout(showToast.t);
+                showToast.t = setTimeout(function () { toast.classList.remove('show'); }, 1600);
+            }
+
+            // ---------- setup screen ----------
+            Object.keys(D.OS).forEach(function (k) {
+                var b = document.createElement('button');
+                b.className = 'oscard' + (selOS === k ? ' on' : '');
+                b.innerHTML = '<span class="e">' + D.OS[k].icon + '</span><span class="n">' + D.OS[k].name + '</span>';
+                b.addEventListener('click', function () {
+                    selOS = k;
+                    localStorage.setItem('osinit_os', k);
+                    osCards.querySelectorAll('.oscard').forEach(function (x) { x.classList.remove('on'); });
+                    b.classList.add('on');
+                    validate();
+                });
+                osCards.appendChild(b);
+            });
+
+            Object.keys(D.PACKS).forEach(function (k) {
+                var b = document.createElement('button');
+                b.className = 'pack' + (selPacks.indexOf(k) !== -1 ? ' on' : '');
+                b.innerHTML = '<div class="e">' + D.PACKS[k].icon + '</div><div class="n">' + D.PACKS[k].name + '</div><div class="d">' + D.PACKS[k].desc + '</div>';
+                b.addEventListener('click', function () {
+                    var i = selPacks.indexOf(k);
+                    if (i === -1) selPacks.push(k); else selPacks.splice(i, 1);
+                    localStorage.setItem('osinit_packs', JSON.stringify(selPacks));
+                    b.classList.toggle('on');
+                    validate();
+                });
+                packChips.appendChild(b);
+            });
+
+            function validate() {
+                buildBtn.disabled = !(selOS && selPacks.length);
+            }
+            validate();
+
+            // ---------- checklist ----------
+            function storageKey() {
+                return 'osinit_done_' + selOS + '_' + selPacks.slice().sort().join('+');
+            }
+
+            function esc(s) {
+                return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            }
+
+            function renderList() {
+                checklist = D.buildChecklist(selOS, selPacks);
+                cfgKey = storageKey();
+                checked = JSON.parse(localStorage.getItem(cfgKey) || '{}');
+
+                document.getElementById('listTitle').innerHTML =
+                    '<span class="e">' + D.OS[selOS].icon + '</span>' + D.OS[selOS].name + ' setup';
+
+                var stepsEl = document.getElementById('steps');
+                stepsEl.innerHTML = '';
+                var lastPack = null;
+                checklist.forEach(function (s, idx) {
+                    if (s.pack !== lastPack) {
+                        lastPack = s.pack;
+                        var h = document.createElement('div');
+                        h.className = 'packhead';
+                        h.textContent = D.PACKS[s.pack].icon + ' ' + D.PACKS[s.pack].name;
+                        stepsEl.appendChild(h);
+                    }
+                    var div = document.createElement('div');
+                    div.className = 'step' + (checked[idx] ? ' done' : '');
+                    var html = '<button class="check" aria-label="Mark done">✓</button><div class="sbody">' +
+                        '<div class="st">' + esc(s.t) + '</div>' +
+                        '<div class="sd">' + esc(s.d) + '</div>';
+                    if (s.cmd) {
+                        html += '<div class="cmdbox"><code>' + esc(s.cmd) + '</code>' +
+                            '<button class="copybtn" data-cmd="' + esc(s.cmd).replace(/"/g, '&quot;') + '">COPY</button></div>';
+                    }
+                    if (s.link) {
+                        html += '<a class="steplink" href="' + esc(s.link.url) + '" target="_blank" rel="noopener">↗ ' + esc(s.link.label) + '</a>';
+                    }
+                    html += '</div>';
+                    div.innerHTML = html;
+
+                    div.querySelector('.check').addEventListener('click', function () {
+                        checked[idx] = !checked[idx];
+                        if (!checked[idx]) delete checked[idx];
+                        localStorage.setItem(cfgKey, JSON.stringify(checked));
+                        div.classList.toggle('done', !!checked[idx]);
+                        updateProgress();
+                    });
+                    var cb = div.querySelector('.copybtn');
+                    if (cb) cb.addEventListener('click', function (e) {
+                        e.stopPropagation();
+                        copyText(s.cmd, 'Command copied');
+                    });
+                    stepsEl.appendChild(div);
+                });
+                updateProgress();
+            }
+
+            function updateProgress() {
+                var total = checklist.length;
+                var n = Object.keys(checked).length;
+                document.getElementById('listCount').textContent = n + ' of ' + total + ' done';
+                document.getElementById('pfill').style.width = (total ? (n / total * 100) : 0) + '%';
+                document.getElementById('doneBanner').classList.toggle('hidden', !(total && n === total));
+            }
+
+            function copyText(text, msg) {
+                function done() { showToast(msg); }
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(text).then(done, function () { fallback(); });
+                } else fallback();
+                function fallback() {
+                    var ta = document.createElement('textarea');
+                    ta.value = text;
+                    ta.style.position = 'fixed';
+                    ta.style.opacity = '0';
+                    document.body.appendChild(ta);
+                    ta.select();
+                    try { document.execCommand('copy'); done(); } catch (e) { showToast('Copy failed'); }
+                    ta.remove();
+                }
+            }
+
+            buildBtn.addEventListener('click', function () {
+                if (!selOS || !selPacks.length) return;
+                renderList();
+                setupScreen.classList.add('hidden');
+                listScreen.classList.remove('hidden');
+                window.scrollTo(0, 0);
+            });
+
+            document.getElementById('backBtn').addEventListener('click', function () {
+                listScreen.classList.add('hidden');
+                setupScreen.classList.remove('hidden');
+                window.scrollTo(0, 0);
+            });
+
+            document.getElementById('resetBtn').addEventListener('click', function () {
+                checked = {};
+                localStorage.removeItem(cfgKey);
+                renderList();
+                showToast('Checklist reset');
+            });
+
+            document.getElementById('copyAllBtn').addEventListener('click', function () {
+                var cmds = checklist.filter(function (s) { return s.cmd; }).map(function (s) { return s.cmd; });
+                if (!cmds.length) { showToast('No commands in this checklist'); return; }
+                copyText(cmds.join('\n'), cmds.length + ' commands copied');
+            });
+
+            // PWA service worker
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function () {
+                    navigator.serviceWorker.register('sw.js').catch(function (err) {
+                        console.warn('SW registration failed:', err);
+                    });
+                });
+            }
+        })();
+    </script>
+</body>
+</html>
