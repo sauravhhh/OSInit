@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="theme-color" content="#10102a">
+    <meta name="theme-color" content="#f6f6f4">
     <meta name="description" content="OSInit — free OSINT toolkit. IP lookup, domain intel, username search and name analysis. No API keys, works offline as a PWA.">
     <title>OSInit — Free OSINT Toolkit</title>
     <link rel="manifest" href="manifest.json">
@@ -12,14 +12,15 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :root {
-            --bg: #10102a;
-            --panel: #1a1b3d;
-            --panel2: #12132e;
-            --ink: #f4f3ff;
-            --muted: #8f8fc0;
-            --teal: #2dd4bf;
-            --red: #f87171;
-            --radius: 16px;
+            --bg: #f6f6f4;
+            --panel: #ffffff;
+            --panel2: #f0f0ee;
+            --ink: #171717;
+            --muted: #737373;
+            --teal: #0d9488;
+            --red: #dc2626;
+            --line: #e7e7e4;
+            --radius: 12px;
         }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -29,82 +30,82 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 14px 12px calc(18px + env(safe-area-inset-bottom));
+            padding: 20px 16px calc(18px + env(safe-area-inset-bottom));
             -webkit-tap-highlight-color: transparent;
             touch-action: manipulation;
         }
         .wrap { width: 100%; max-width: 480px; display: flex; flex-direction: column; align-items: center; }
         .hidden { display: none !important; }
 
-        .top { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; align-self: flex-start; width: 100%; }
-        .top img { width: 42px; height: 42px; border-radius: 12px; box-shadow: 0 4px 14px rgba(45,212,191,.3); }
-        .top h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.4px; flex: 1; }
-        .top .sub { font-size: 11px; color: var(--muted); font-weight: 600; text-align: right; line-height: 1.4; }
+        .top { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; align-self: flex-start; width: 100%; }
+        .top img { width: 32px; height: 32px; border-radius: 8px; }
+        .top h1 { font-size: 21px; font-weight: 700; letter-spacing: -0.3px; flex: 1; }
+        .top .sub { font-size: 11px; color: var(--muted); font-weight: 500; text-align: right; line-height: 1.4; }
 
-        .tabs { display: flex; gap: 8px; width: 100%; margin-bottom: 14px; }
+        .tabs { display: flex; gap: 4px; width: 100%; margin-bottom: 16px; border-bottom: 1px solid var(--line); }
         .tab {
-            flex: 1; border: 2px solid transparent; background: var(--panel); color: var(--muted);
-            border-radius: 12px; padding: 10px 4px; cursor: pointer; font-family: inherit;
-            font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .4px;
+            flex: 1; border: none; background: none; color: var(--muted);
+            padding: 10px 4px; cursor: pointer; font-family: inherit;
+            font-size: 13px; font-weight: 600; border-bottom: 2px solid transparent; margin-bottom: -1px;
         }
-        .tab .e { display: block; font-size: 20px; margin-bottom: 3px; }
-        .tab.on { border-color: var(--teal); color: var(--ink); background: rgba(45,212,191,.08); }
+        .tab .e { display: none; }
+        .tab.on { color: var(--ink); border-bottom-color: var(--teal); }
 
         .searchrow { display: flex; gap: 8px; width: 100%; margin-bottom: 12px; }
         .searchrow input {
-            flex: 1; min-width: 0; border: 1px solid rgba(255,255,255,.12); border-radius: 12px;
-            background: var(--panel2); color: var(--ink); font-size: 16px; padding: 13px 14px;
+            flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 10px;
+            background: var(--panel); color: var(--ink); font-size: 16px; padding: 12px 14px;
             font-family: inherit; outline: none;
         }
         .searchrow input:focus { border-color: var(--teal); }
         .gobtn {
-            flex: none; border: none; border-radius: 12px; cursor: pointer; font-family: inherit;
-            background: linear-gradient(135deg, #2dd4bf, #0d9488); color: #04302b;
-            font-size: 15px; font-weight: 800; padding: 0 20px; min-height: 50px;
+            flex: none; border: none; border-radius: 10px; cursor: pointer; font-family: inherit;
+            background: var(--teal); color: #fff;
+            font-size: 15px; font-weight: 700; padding: 0 20px; min-height: 48px;
         }
-        .gobtn:active { transform: scale(.96); }
+        .gobtn:active { transform: scale(.97); }
         .gobtn:disabled { opacity: .5; }
 
         .results { width: 100%; display: flex; flex-direction: column; gap: 10px; }
         .card {
-            width: 100%; background: var(--panel); border-radius: var(--radius); padding: 14px;
+            width: 100%; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px;
         }
-        .card h3 { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--teal); margin-bottom: 10px; }
-        .big { font-size: 26px; font-weight: 800; letter-spacing: -.5px; }
-        .kv { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,.06); font-size: 14px; }
+        .card h3 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--teal); margin-bottom: 10px; }
+        .big { font-size: 26px; font-weight: 700; letter-spacing: -.5px; }
+        .kv { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--panel2); font-size: 14px; }
         .kv:last-child { border-bottom: none; }
-        .kv .k { color: var(--muted); font-weight: 600; flex: none; }
-        .kv .v { text-align: right; font-weight: 700; word-break: break-word; }
+        .kv .k { color: var(--muted); font-weight: 500; flex: none; }
+        .kv .v { text-align: right; font-weight: 600; word-break: break-word; }
         .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; }
 
         .profile { display: flex; gap: 12px; align-items: center; margin-bottom: 10px; }
-        .profile img { width: 58px; height: 58px; border-radius: 50%; background: var(--panel2); }
-        .profile .pn { font-size: 17px; font-weight: 800; }
+        .profile img { width: 52px; height: 52px; border-radius: 50%; background: var(--panel2); }
+        .profile .pn { font-size: 17px; font-weight: 700; }
         .profile .pu { font-size: 13px; color: var(--muted); }
         .bio { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 6px; }
         .statrow { display: flex; gap: 8px; margin-top: 8px; }
-        .stat { flex: 1; background: var(--panel2); border-radius: 10px; padding: 8px 4px; text-align: center; }
-        .stat .n { font-size: 17px; font-weight: 800; }
-        .stat .l { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; font-weight: 700; }
+        .stat { flex: 1; background: var(--panel2); border-radius: 8px; padding: 8px 4px; text-align: center; }
+        .stat .n { font-size: 17px; font-weight: 700; }
+        .stat .l { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; font-weight: 600; }
 
         .outlink {
-            display: inline-block; margin-top: 10px; font-size: 13px; font-weight: 700;
-            color: var(--teal); text-decoration: none; background: rgba(45,212,191,.1);
-            padding: 8px 14px; border-radius: 10px;
+            display: inline-block; margin-top: 10px; font-size: 13px; font-weight: 600;
+            color: var(--teal); text-decoration: none; background: rgba(13,148,136,.08);
+            padding: 8px 14px; border-radius: 8px;
         }
         .sublist { max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
         .sublist .row { font-size: 13px; padding: 7px 10px; background: var(--panel2); border-radius: 8px; display: flex; justify-content: space-between; gap: 8px; }
         .sublist .row .ip { color: var(--muted); font-size: 12px; }
 
         .spinner {
-            width: 34px; height: 34px; margin: 26px auto; border-radius: 50%;
-            border: 3px solid rgba(45,212,191,.2); border-top-color: var(--teal);
+            width: 28px; height: 28px; margin: 26px auto; border-radius: 50%;
+            border: 3px solid rgba(13,148,136,.15); border-top-color: var(--teal);
             animation: spin .7s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
         .err {
-            width: 100%; background: rgba(248,113,113,.08); border: 1px solid rgba(248,113,113,.35);
-            color: var(--red); border-radius: 12px; padding: 12px 14px; font-size: 14px; font-weight: 600;
+            width: 100%; background: #fef2f2; border: 1px solid #fecaca;
+            color: var(--red); border-radius: 10px; padding: 12px 14px; font-size: 14px; font-weight: 500;
             line-height: 1.5;
         }
         .note { font-size: 12px; color: var(--muted); line-height: 1.6; text-align: center; margin-top: 6px; }
@@ -113,10 +114,10 @@
 
         .toast {
             position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(20px);
-            background: #23244d; color: var(--ink); font-size: 14px; font-weight: 700;
+            background: #171717; color: #fff; font-size: 14px; font-weight: 600;
             padding: 12px 22px; border-radius: 24px; opacity: 0; pointer-events: none;
             transition: opacity .25s, transform .25s; z-index: 50; white-space: nowrap;
-            box-shadow: 0 8px 24px rgba(0,0,0,.5);
+            box-shadow: 0 8px 24px rgba(0,0,0,.15);
         }
         .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     </style>
