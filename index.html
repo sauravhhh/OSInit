@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="theme-color" content="#10102a">
-    <meta name="description" content="OSInit — free OSINT toolkit. IP lookup, domain intel, username search and name analysis. No API keys, works offline as a PWA.">
-    <title>OSInit — Free OSINT Toolkit</title>
+    <meta name="description" content="OSInit — free IP lookup. No API keys, works offline as a PWA.">
+    <title>OSInit — Free IP Lookup</title>
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -126,14 +126,7 @@
         <div class="top">
             <img src="icon-192.png" alt="OSInit icon">
             <h1>OSInit</h1>
-            <div class="sub">free OSINT<br>toolkit</div>
-        </div>
-
-        <div class="tabs" id="tabs">
-            <button class="tab on" data-tab="ip"><span class="e">📍</span>IP</button>
-            <button class="tab" data-tab="domain"><span class="e">🌐</span>Domain</button>
-            <button class="tab" data-tab="user"><span class="e">👤</span>Username</button>
-            <button class="tab" data-tab="name"><span class="e">🔤</span>Name</button>
+            <div class="sub">free IP<br>lookup</div>
         </div>
 
         <!-- IP -->
@@ -146,37 +139,7 @@
             <div class="note">Leave empty and hit Go to look up your own IP.</div>
         </div>
 
-        <!-- Domain -->
-        <div class="tabpane wrap hidden" id="pane-domain">
-            <div class="searchrow">
-                <input id="domainInput" inputmode="url" placeholder="example.com" autocomplete="off" autocapitalize="off" spellcheck="false">
-                <button class="gobtn" id="domainGo">Go</button>
-            </div>
-            <div class="results" id="domainResults"></div>
-            <div class="note">DNS records via Google DNS · subdomains via HackerTarget.</div>
-        </div>
-
-        <!-- Username -->
-        <div class="tabpane wrap hidden" id="pane-user">
-            <div class="searchrow">
-                <input id="userInput" placeholder="torvalds" autocomplete="off" autocapitalize="off" spellcheck="false">
-                <button class="gobtn" id="userGo">Go</button>
-            </div>
-            <div class="results" id="userResults"></div>
-            <div class="note">Checks GitHub and GitLab public profiles in parallel.</div>
-        </div>
-
-        <!-- Name -->
-        <div class="tabpane wrap hidden" id="pane-name">
-            <div class="searchrow">
-                <input id="nameInput" placeholder="Saurabh" autocomplete="off" autocapitalize="off" spellcheck="false">
-                <button class="gobtn" id="nameGo">Go</button>
-            </div>
-            <div class="results" id="nameResults"></div>
-            <div class="note">Statistical guesses from first names — age, gender, nationality.</div>
-        </div>
-
-        <div class="sources">Free APIs, no keys needed:<br>ipwho.is · ipify · Google DNS · HackerTarget · GitHub · GitLab · agify · genderize · nationalize</div>
+        <div class="sources">IP lookup via ipapi.co — free, no key needed.</div>
         <footer>Made with ❤️ by Sauravhhh</footer>
     </div>
     <div class="toast" id="toast"></div>
@@ -211,23 +174,6 @@
                     return r.json();
                 });
             }
-            function getText(url) {
-                return fetch(url).then(function (r) {
-                    if (!r.ok) throw new Error('HTTP ' + r.status);
-                    return r.text();
-                });
-            }
-
-            // ---------- tabs ----------
-            var tabs = document.querySelectorAll('#tabs .tab');
-            tabs.forEach(function (t) {
-                t.addEventListener('click', function () {
-                    tabs.forEach(function (x) { x.classList.remove('on'); });
-                    t.classList.add('on');
-                    document.querySelectorAll('.tabpane').forEach(function (p) { p.classList.add('hidden'); });
-                    document.getElementById('pane-' + t.getAttribute('data-tab')).classList.remove('hidden');
-                });
-            });
 
             // ================= IP =================
             var ipInput = document.getElementById('ipInput');
@@ -264,23 +210,17 @@
                 if (ipBusy) return;
                 ipBusy = true;
                 ipResults.innerHTML = spinnerHTML();
-                var target = ip ? 'https://ipwho.is/' + encodeURIComponent(ip) : 'https://ipwho.is/';
-                getJSON(target).then(function (d) {
-                    if (!d.success) {
-                        // fallback to ipapi.co
-                        return getJSON('https://ipapi.co/' + encodeURIComponent(ip || '') + '/json/').then(function (d2) {
-                            if (d2.error) throw new Error(d2.reason || 'Lookup failed');
-                            return {
-                                ip: d2.ip, success: true, type: d2.version,
-                                city: d2.city, region: d2.region, country: d2.country_name,
-                                country_code: d2.country_code, latitude: d2.latitude, longitude: d2.longitude,
-                                postal: d2.postal, calling_code: d2.country_calling_code,
-                                connection: { asn: (d2.asn || '').replace('AS', ''), org: d2.org, isp: d2.org },
-                                timezone: { id: d2.timezone, abbr: '', utc: d2.utc_offset }, flag: {}
-                            };
-                        });
-                    }
-                    return d;
+                var url = ip ? 'https://ipapi.co/' + encodeURIComponent(ip) + '/json/' : 'https://ipapi.co/json/';
+                getJSON(url).then(function (d2) {
+                    if (d2.error) throw new Error(d2.reason || 'Lookup failed');
+                    return {
+                        ip: d2.ip, success: true, type: d2.version,
+                        city: d2.city, region: d2.region, country: d2.country_name,
+                        country_code: d2.country_code, latitude: d2.latitude, longitude: d2.longitude,
+                        postal: d2.postal, calling_code: d2.country_calling_code,
+                        connection: { asn: (d2.asn || '').replace('AS', ''), org: d2.org, isp: d2.org },
+                        timezone: { id: d2.timezone, abbr: '', utc: d2.utc_offset }, flag: {}
+                    };
                 }).then(function (d) {
                     ipResults.innerHTML = ipCard(d);
                 }).catch(function (e) {
@@ -290,209 +230,9 @@
 
             document.getElementById('ipGo').addEventListener('click', function () {
                 var v = ipInput.value.trim();
-                if (!v) {
-                    // my IP
-                    ipBusy = true;
-                    ipResults.innerHTML = spinnerHTML();
-                    getJSON('https://api.ipify.org?format=json').then(function (d) {
-                        ipInput.value = d.ip;
-                        ipBusy = false;
-                        lookupIP(d.ip);
-                    }).catch(function () {
-                        ipBusy = false;
-                        lookupIP(''); // ipwho.is auto-detect
-                    });
-                    return;
-                }
                 lookupIP(v);
             });
             ipInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') document.getElementById('ipGo').click(); });
-
-            // ================= DOMAIN =================
-            var domainInput = document.getElementById('domainInput');
-            var domainResults = document.getElementById('domainResults');
-            var domainBusy = false;
-            var DNS_TYPES = ['A', 'AAAA', 'MX', 'TXT', 'NS'];
-
-            function lookupDomain(dom) {
-                if (domainBusy) return;
-                if (!/^(?!-)[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/i.test(dom)) {
-                    domainResults.innerHTML = errHTML('That does not look like a valid domain. Try example.com');
-                    return;
-                }
-                domainBusy = true;
-                domainResults.innerHTML = spinnerHTML();
-
-                var dnsPromises = DNS_TYPES.map(function (t) {
-                    return getJSON('https://dns.google/resolve?name=' + encodeURIComponent(dom) + '&type=' + t)
-                        .then(function (d) { return { type: t, answers: (d.Answer || []).map(function (a) { return a.data.replace(/^"|"$/g, ''); }) }; })
-                        .catch(function () { return { type: t, answers: [] }; });
-                });
-                var subsPromise = getText('https://api.hackertarget.com/hostsearch/?q=' + encodeURIComponent(dom))
-                    .then(function (txt) {
-                        if (/error/i.test(txt)) return [];
-                        var hosts = {};
-                        txt.split('\n').forEach(function (line) {
-                            var parts = line.split(',');
-                            if (parts[0]) hosts[parts[0].trim()] = (parts[1] || '').trim();
-                        });
-                        return Object.keys(hosts).map(function (h) { return { host: h, ip: hosts[h] }; });
-                    })
-                    .catch(function () { return null; });
-
-                Promise.all([Promise.all(dnsPromises), subsPromise]).then(function (res) {
-                    var dns = res[0], subs = res[1];
-                    var html = '<div class="card"><h3>🌐 DNS Records — ' + esc(dom) + '</h3>';
-                    dns.forEach(function (r) {
-                        html += '<div style="margin-top:8px;"><div class="mono" style="color:var(--teal);font-weight:800;font-size:12px;margin-bottom:4px;">' + r.type + '</div>';
-                        if (r.answers.length) {
-                            r.answers.slice(0, 8).forEach(function (a) {
-                                html += '<div class="mono" style="font-size:12.5px;padding:3px 0;word-break:break-all;">' + esc(a) + '</div>';
-                            });
-                        } else {
-                            html += '<div style="font-size:13px;color:var(--muted);">No ' + r.type + ' records</div>';
-                        }
-                        html += '</div>';
-                    });
-                    html += '</div>';
-
-                    if (subs === null) {
-                        html += '<div class="card"><h3>🔎 Subdomains</h3><div style="font-size:13px;color:var(--muted);">Subdomain lookup is rate-limited right now — try again in a minute.</div></div>';
-                    } else {
-                        html += '<div class="card"><h3>🔎 Subdomains (' + subs.length + ' found)</h3>';
-                        if (subs.length) {
-                            html += '<div class="sublist">';
-                            subs.slice(0, 40).forEach(function (s) {
-                                html += '<div class="row"><span class="mono">' + esc(s.host) + '</span><span class="ip mono">' + esc(s.ip) + '</span></div>';
-                            });
-                            html += '</div>';
-                            if (subs.length > 40) html += '<div class="note">Showing 40 of ' + subs.length + '</div>';
-                        } else {
-                            html += '<div style="font-size:13px;color:var(--muted);">No subdomains found for this domain.</div>';
-                        }
-                        html += '</div>';
-                    }
-                    domainResults.innerHTML = html;
-                }).catch(function (e) {
-                    domainResults.innerHTML = errHTML('Domain lookup failed. Check the domain and try again. (' + e.message + ')');
-                }).then(function () { domainBusy = false; });
-            }
-
-            document.getElementById('domainGo').addEventListener('click', function () {
-                lookupDomain(domainInput.value.trim().replace(/^https?:\/\//, '').split('/')[0]);
-            });
-            domainInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') document.getElementById('domainGo').click(); });
-
-            // ================= USERNAME =================
-            var userInput = document.getElementById('userInput');
-            var userResults = document.getElementById('userResults');
-            var userBusy = false;
-
-            function ghCard(u) {
-                if (!u) return '<div class="card"><h3>🐙 GitHub</h3><div style="font-size:13px;color:var(--muted);">No GitHub user with this name.</div></div>';
-                var created = u.created_at ? new Date(u.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
-                return '<div class="card"><h3>🐙 GitHub</h3>' +
-                    '<div class="profile"><img src="' + esc(u.avatar_url) + '" alt="" loading="lazy">' +
-                    '<div><div class="pn">' + esc(u.name || u.login) + '</div><div class="pu">@' + esc(u.login) + '</div></div></div>' +
-                    (u.bio ? '<div class="bio">' + esc(u.bio) + '</div>' : '') +
-                    '<div class="statrow">' +
-                    '<div class="stat"><div class="n">' + u.public_repos + '</div><div class="l">Repos</div></div>' +
-                    '<div class="stat"><div class="n">' + u.followers + '</div><div class="l">Followers</div></div>' +
-                    '<div class="stat"><div class="n">' + u.following + '</div><div class="l">Following</div></div></div>' +
-                    kv('Location', u.location || '—') +
-                    kv('Joined', created) +
-                    '<a class="outlink" target="_blank" rel="noopener" href="' + esc(u.html_url) + '">↗ Open GitHub profile</a></div>';
-            }
-            function glCard(arr) {
-                var u = (arr && arr[0]) || null;
-                if (!u) return '<div class="card"><h3>🦊 GitLab</h3><div style="font-size:13px;color:var(--muted);">No GitLab user with this name.</div></div>';
-                var created = u.created_at ? new Date(u.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
-                return '<div class="card"><h3>🦊 GitLab</h3>' +
-                    '<div class="profile"><img src="' + esc(u.avatar_url) + '" alt="" loading="lazy">' +
-                    '<div><div class="pn">' + esc(u.name || u.username) + '</div><div class="pu">@' + esc(u.username) + '</div></div></div>' +
-                    (u.bio ? '<div class="bio">' + esc(u.bio) + '</div>' : '') +
-                    kv('State', u.state || '—') +
-                    kv('Joined', created) +
-                    '<a class="outlink" target="_blank" rel="noopener" href="' + esc(u.web_url) + '">↗ Open GitLab profile</a></div>';
-            }
-
-            function lookupUser(name) {
-                if (userBusy) return;
-                if (!/^[a-z0-9]([a-z0-9-]{0,37}[a-z0-9])?$/i.test(name)) {
-                    userResults.innerHTML = errHTML('Usernames can only contain letters, numbers and hyphens.');
-                    return;
-                }
-                userBusy = true;
-                userResults.innerHTML = spinnerHTML();
-                var gh = getJSON('https://api.github.com/users/' + encodeURIComponent(name)).catch(function () { return null; });
-                var gl = getJSON('https://gitlab.com/api/v4/users?username=' + encodeURIComponent(name)).catch(function () { return null; });
-                Promise.all([gh, gl]).then(function (res) {
-                    userResults.innerHTML = ghCard(res[0]) + glCard(res[1]);
-                }).catch(function (e) {
-                    userResults.innerHTML = errHTML('Username lookup failed. (' + e.message + ')');
-                }).then(function () { userBusy = false; });
-            }
-
-            document.getElementById('userGo').addEventListener('click', function () {
-                lookupUser(userInput.value.trim());
-            });
-            userInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') document.getElementById('userGo').click(); });
-
-            // ================= NAME =================
-            var nameInput = document.getElementById('nameInput');
-            var nameResults = document.getElementById('nameResults');
-            var nameBusy = false;
-
-            function lookupName(nm) {
-                if (nameBusy) return;
-                if (!/^[a-z]+$/i.test(nm)) {
-                    nameResults.innerHTML = errHTML('Enter a single first name using letters only.');
-                    return;
-                }
-                nameBusy = true;
-                nameResults.innerHTML = spinnerHTML();
-                var q = encodeURIComponent(nm);
-                Promise.all([
-                    getJSON('https://api.agify.io?name=' + q).catch(function () { return null; }),
-                    getJSON('https://api.genderize.io?name=' + q).catch(function () { return null; }),
-                    getJSON('https://api.nationalize.io?name=' + q).catch(function () { return null; })
-                ]).then(function (res) {
-                    var age = res[0], gen = res[1], nat = res[2];
-                    var html = '';
-                    html += '<div class="card"><h3>🎂 Predicted age</h3>';
-                    if (age && age.age != null) {
-                        html += '<div class="big">' + age.age + ' years</div>' +
-                            '<div class="note" style="text-align:left;">Based on ' + Number(age.count).toLocaleString('en-IN') + ' records for the name “' + esc(age.name) + '”.</div>';
-                    } else html += '<div style="font-size:13px;color:var(--muted);">No age data for this name.</div>';
-                    html += '</div>';
-
-                    html += '<div class="card"><h3>⚧ Predicted gender</h3>';
-                    if (gen && gen.gender) {
-                        var gp = Math.round(gen.probability * 100);
-                        html += '<div class="big" style="text-transform:capitalize;">' + esc(gen.gender) + ' · ' + gp + '%</div>' +
-                            '<div class="note" style="text-align:left;">Based on ' + Number(gen.count).toLocaleString('en-IN') + ' records.</div>';
-                    } else html += '<div style="font-size:13px;color:var(--muted);">No gender data for this name.</div>';
-                    html += '</div>';
-
-                    html += '<div class="card"><h3>🌍 Predicted nationality</h3>';
-                    if (nat && nat.country && nat.country.length) {
-                        nat.country.slice(0, 3).forEach(function (c) {
-                            html += '<div class="kv"><span class="k">' + flag(c.country_id) + ' ' + esc(c.country_id) + '</span><span class="v">' + Math.round(c.probability * 100) + '%</span></div>';
-                        });
-                        html += '<div class="note" style="text-align:left;">Based on ' + Number(nat.count).toLocaleString('en-IN') + ' records.</div>';
-                    } else html += '<div style="font-size:13px;color:var(--muted);">No nationality data for this name.</div>';
-                    html += '</div>';
-
-                    nameResults.innerHTML = html;
-                }).catch(function (e) {
-                    nameResults.innerHTML = errHTML('Name lookup failed. (' + e.message + ')');
-                }).then(function () { nameBusy = false; });
-            }
-
-            document.getElementById('nameGo').addEventListener('click', function () {
-                lookupName(nameInput.value.trim());
-            });
-            nameInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') document.getElementById('nameGo').click(); });
 
             // PWA service worker
             if ('serviceWorker' in navigator) {
