@@ -1,6 +1,6 @@
 // OS Init service worker — network-first for pages (updates show immediately when online),
 // cache-first for the app's own static assets so the shell works offline.
-const CACHE = 'osinit-v4';
+const CACHE = 'osinit-v5';
 const ASSETS = [
   './',
   'index.html',
